@@ -1,3 +1,4 @@
+# Disabled in this fork until its Docker registry target and credentials are configured.
 name: Publish Docker image
 on:
   push:
