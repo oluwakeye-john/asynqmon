@@ -1,13 +1,73 @@
 import axios from "axios";
 import queryString from "query-string";
 
-// In production build, API server is on listening on the same port as
-// the static file server.
-// In developement, we assume that the API server is listening on port 8080.
-const getBaseUrl = () =>
-  import.meta.env.PROD
-    ? `${window.ROOT_PATH}/api`
-    : `http://localhost:8080${window.ROOT_PATH}/api`;
+// API requests are same-origin in production and use Vite's development proxy.
+const getBaseUrl = () => `${window.ROOT_PATH}/api`;
+
+let csrfToken = "";
+let unauthorizedHandler: (() => void) | undefined;
+
+axios.defaults.withCredentials = true;
+
+axios.interceptors.request.use((config) => {
+  const method = config.method?.toLowerCase();
+  if (csrfToken && method && !["get", "head", "options"].includes(method)) {
+    config.headers = config.headers || {};
+    config.headers["X-CSRF-Token"] = csrfToken;
+  }
+  return config;
+});
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const requestUrl = String(error.config?.url || "");
+    if (
+      error.response?.status === 401 &&
+      !requestUrl.endsWith("/auth/login")
+    ) {
+      unauthorizedHandler?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
+export interface AuthStateResponse {
+  enabled: boolean;
+  authenticated: boolean;
+  username?: string;
+  csrfToken?: string;
+}
+
+export function setCSRFToken(token?: string): void {
+  csrfToken = token || "";
+}
+
+export function setUnauthorizedHandler(handler?: () => void): void {
+  unauthorizedHandler = handler;
+}
+
+export async function getAuthSession(): Promise<AuthStateResponse> {
+  const response = await axios.get<AuthStateResponse>(
+    `${getBaseUrl()}/auth/session`
+  );
+  return response.data;
+}
+
+export async function login(
+  username: string,
+  password: string
+): Promise<AuthStateResponse> {
+  const response = await axios.post<AuthStateResponse>(
+    `${getBaseUrl()}/auth/login`,
+    { username, password }
+  );
+  return response.data;
+}
+
+export async function logout(): Promise<void> {
+  await axios.post(`${getBaseUrl()}/auth/logout`);
+}
 
 export interface ListQueuesResponse {
   queues: Queue[];

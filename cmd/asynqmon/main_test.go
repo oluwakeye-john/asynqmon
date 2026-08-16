@@ -16,7 +16,7 @@ func TestParseFlags(t *testing.T) {
 		want *Config
 	}{
 		{
-			args: []string{"--redis-addr", "localhost:6380", "--redis-db", "3"},
+			args: []string{"--redis-addr", "localhost:6380", "--redis-db", "3", "--auth-username", "operator", "--auth-password", "secret"},
 			want: &Config{
 				RedisAddr: "localhost:6380",
 				RedisDB:   3,
@@ -33,6 +33,8 @@ func TestParseFlags(t *testing.T) {
 				EnableMetricsExporter: false,
 				PrometheusServerAddr:  "",
 				ReadOnly:              false,
+				AuthUsername:          "operator",
+				AuthPassword:          "secret",
 
 				Args: []string{},
 			},
@@ -54,6 +56,28 @@ func TestParseFlags(t *testing.T) {
 		})
 	}
 
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{name: "authentication disabled", config: &Config{}},
+		{name: "authentication enabled", config: &Config{AuthUsername: "operator", AuthPassword: "secret"}},
+		{name: "missing password", config: &Config{AuthUsername: "operator"}, wantErr: true},
+		{name: "missing username", config: &Config{AuthPassword: "secret"}, wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateConfig(tc.config)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("validateConfig() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
 }
 
 func TestMakeRedisConnOpt(t *testing.T) {
@@ -103,10 +127,10 @@ func TestMakeRedisConnOpt(t *testing.T) {
 				RedisURL: "redis-sentinel://:secretpassword@localhost:5000,localhost:5001,localhost:5002?master=mymaster",
 			},
 			want: asynq.RedisFailoverClientOpt{
-				MasterName: "mymaster",
+				MasterName:       "mymaster",
+				SentinelPassword: "secretpassword",
 				SentinelAddrs: []string{
 					"localhost:5000", "localhost:5001", "localhost:5002"},
-				Password: "secretpassword", // FIXME: Shouldn't this be SentinelPassword instead?
 			},
 		},
 		{
