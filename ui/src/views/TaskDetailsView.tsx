@@ -9,7 +9,7 @@ import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
 import Alert from "@material-ui/lab/Alert";
 import AlertTitle from "@material-ui/lab/AlertTitle";
-import ArrowBackIcon from "@material-ui/icons/ArrowBack";
+import { ArrowBack as ArrowBackIcon } from "@material-ui/icons";
 import { useParams } from "react-router-dom";
 import QueueBreadCrumb from "../components/QueueBreadcrumb";
 import { AppState } from "../store";

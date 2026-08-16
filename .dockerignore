@@ -9,6 +9,9 @@ LICENSE
 **/*.md
 **/*_test.go
 *.out
+/api
+/asynqmon
+/ui/build/
 
 # Folders
 .git/

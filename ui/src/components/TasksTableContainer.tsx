@@ -5,7 +5,7 @@ import Typography from "@material-ui/core/Typography";
 import Paper from "@material-ui/core/Paper";
 import Chip from "@material-ui/core/Chip";
 import InputBase from "@material-ui/core/InputBase";
-import SearchIcon from "@material-ui/icons/Search";
+import { Search as SearchIcon } from "@material-ui/icons";
 import ActiveTasksTable from "./ActiveTasksTable";
 import PendingTasksTable from "./PendingTasksTable";
 import ScheduledTasksTable from "./ScheduledTasksTable";

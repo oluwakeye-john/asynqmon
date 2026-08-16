@@ -3,10 +3,12 @@ import IconButton from "@material-ui/core/IconButton";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import Tooltip from "@material-ui/core/Tooltip";
-import ArchiveIcon from "@material-ui/icons/Archive";
-import DeleteIcon from "@material-ui/icons/Delete";
-import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
-import MoreHorizIcon from "@material-ui/icons/MoreHoriz";
+import {
+  Archive as ArchiveIcon,
+  Delete as DeleteIcon,
+  FileCopyOutlined as FileCopyOutlinedIcon,
+  MoreHoriz as MoreHorizIcon,
+} from "@material-ui/icons";
 import React from "react";
 import { connect, ConnectedProps } from "react-redux";
 import { useHistory } from "react-router-dom";

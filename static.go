@@ -53,9 +53,8 @@ func (h *uiAssetsHandler) indexFilePath() string {
 }
 
 func (h *uiAssetsHandler) renderIndexFile(w http.ResponseWriter) error {
-	// Note: Replace the default delimiter ("{{") with a custom one
-	// since webpack escapes the '{' character when it compiles the index.html file.
-	// See the "homepage" field in package.json.
+	// The UI build intentionally emits these custom delimiters so the server can
+	// inject deployment-specific values without conflicting with HTML or JavaScript.
 	tmpl, err := template.New(h.indexFileName).Delims("/[[", "]]").ParseFS(h.contents, h.indexFilePath())
 	if err != nil {
 		return err

@@ -11,7 +11,7 @@ import TableRow from "@material-ui/core/TableRow";
 import Modal from "@material-ui/core/Modal";
 import Typography from "@material-ui/core/Typography";
 import Tooltip from "@material-ui/core/Tooltip";
-import HistoryIcon from "@material-ui/icons/History";
+import { History as HistoryIcon } from "@material-ui/icons";
 import Alert from "@material-ui/lab/Alert";
 import AlertTitle from "@material-ui/lab/AlertTitle";
 import { SortDirection, SortableTableColumn } from "../types/table";

@@ -4,7 +4,7 @@ import Tooltip from "@material-ui/core/Tooltip";
 import IconButton from "@material-ui/core/IconButton";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
-import MoreHorizIcon from "@material-ui/icons/MoreHoriz";
+import { MoreHoriz as MoreHorizIcon } from "@material-ui/icons";
 
 const useStyles = makeStyles((theme) => ({
   actionsContainer: {

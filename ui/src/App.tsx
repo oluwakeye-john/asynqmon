@@ -15,15 +15,17 @@ import SnackbarContent from "@material-ui/core/SnackbarContent";
 import IconButton from "@material-ui/core/IconButton";
 import Slide from "@material-ui/core/Slide";
 import { TransitionProps } from "@material-ui/core/transitions";
-import MenuIcon from "@material-ui/icons/Menu";
-import BarChartIcon from "@material-ui/icons/BarChart";
-import LayersIcon from "@material-ui/icons/Layers";
-import SettingsIcon from "@material-ui/icons/Settings";
-import ScheduleIcon from "@material-ui/icons/Schedule";
-import FeedbackIcon from "@material-ui/icons/Feedback";
-import TimelineIcon from "@material-ui/icons/Timeline";
-import DoubleArrowIcon from "@material-ui/icons/DoubleArrow";
-import CloseIcon from "@material-ui/icons/Close";
+import {
+  BarChart as BarChartIcon,
+  Close as CloseIcon,
+  DoubleArrow as DoubleArrowIcon,
+  Feedback as FeedbackIcon,
+  Layers as LayersIcon,
+  Menu as MenuIcon,
+  Schedule as ScheduleIcon,
+  Settings as SettingsIcon,
+  Timeline as TimelineIcon,
+} from "@material-ui/icons";
 import { AppState } from "./store";
 import { paths as getPaths } from "./paths";
 import { isDarkTheme, useTheme } from "./theme";
@@ -39,8 +41,8 @@ import ServersView from "./views/ServersView";
 import RedisInfoView from "./views/RedisInfoView";
 import MetricsView from "./views/MetricsView";
 import PageNotFoundView from "./views/PageNotFoundView";
-import { ReactComponent as Logo } from "./images/logo-color.svg";
-import { ReactComponent as LogoDarkTheme } from "./images/logo-white.svg";
+import Logo from "./images/logo-color.svg?react";
+import LogoDarkTheme from "./images/logo-white.svg?react";
 
 const drawerWidth = 220;
 

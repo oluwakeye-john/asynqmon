@@ -1,38 +1,40 @@
+# syntax=docker/dockerfile:1.7
+
 #
 # First stage: 
 # Building a frontend.
 #
 
-FROM alpine:3.17 AS frontend
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
 
 # Move to a working directory (/static).
 WORKDIR /static
 
-# https://stackoverflow.com/questions/69692842/error-message-error0308010cdigital-envelope-routinesunsupported
-ENV NODE_OPTIONS=--openssl-legacy-provider
-# Install npm (with latest nodejs) and yarn (globally, in silent mode).
-RUN apk add --update nodejs npm && \
-    npm i -g -s --unsafe-perm yarn
+# Install dependencies separately so Docker can cache them until the lockfile changes.
+COPY ui/package.json ui/yarn.lock ./
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn \
+    yarn install --frozen-lockfile
 
-# Copy only ./ui folder to the working directory.
+# Copy the UI source and create the production bundle.
 COPY ui .
-
-# Run yarn scripts (install & build).
-RUN yarn install && yarn build
+RUN yarn build
 
 #
 # Second stage: 
 # Building a backend.
 #
 
-FROM golang:1.18-alpine AS backend
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine3.24 AS backend
 
 # Move to a working directory (/build).
 WORKDIR /build
 
+# Install the CA bundle used by TLS Redis connections in the scratch image.
+RUN apk add --no-cache ca-certificates
+
 # Copy and download dependencies.
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 # Copy a source code to the container.
 COPY . .
@@ -40,11 +42,15 @@ COPY . .
 # Copy frontend static files from /static to the root folder of the backend container.
 COPY --from=frontend ["/static/build", "ui/build"]
 
-# Set necessary environmet variables needed for the image and build the server.
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+# Build for Docker's requested target platform rather than the builder's platform.
+ARG TARGETOS
+ARG TARGETARCH
 
 # Run go build (with ldflags to reduce binary size).
-RUN go build -ldflags="-s -w" -o asynqmon ./cmd/asynqmon
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags="-s -w" -o asynqmon ./cmd/asynqmon
 
 #
 # Third stage: 
@@ -53,8 +59,16 @@ RUN go build -ldflags="-s -w" -o asynqmon ./cmd/asynqmon
 
 FROM scratch
 
+# Include system roots so verified TLS Redis connections work.
+COPY --from=backend ["/etc/ssl/certs/ca-certificates.crt", "/etc/ssl/certs/ca-certificates.crt"]
+
 # Copy binary from /build to the root folder of the scratch container.
 COPY --from=backend ["/build/asynqmon", "/"]
+
+# Run as an unprivileged numeric user; scratch has no user database.
+USER 65532:65532
+
+EXPOSE 8080
 
 # Command to run when starting the container.
 ENTRYPOINT ["/asynqmon"]

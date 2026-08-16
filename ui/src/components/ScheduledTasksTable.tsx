@@ -6,11 +6,13 @@ import TableCell from "@material-ui/core/TableCell";
 import Checkbox from "@material-ui/core/Checkbox";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
-import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
-import DeleteIcon from "@material-ui/icons/Delete";
-import ArchiveIcon from "@material-ui/icons/Archive";
-import MoreHorizIcon from "@material-ui/icons/MoreHoriz";
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import {
+  Archive as ArchiveIcon,
+  Delete as DeleteIcon,
+  FileCopyOutlined as FileCopyOutlinedIcon,
+  MoreHoriz as MoreHorizIcon,
+  PlayArrow as PlayArrowIcon,
+} from "@material-ui/icons";
 import SyntaxHighlighter from "./SyntaxHighlighter";
 import TasksTable, { RowProps, useRowStyles } from "./TasksTable";
 import {

@@ -11,10 +11,12 @@ import TablePagination from "@material-ui/core/TablePagination";
 import Paper from "@material-ui/core/Paper";
 import Checkbox from "@material-ui/core/Checkbox";
 import IconButton from "@material-ui/core/IconButton";
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
-import DeleteIcon from "@material-ui/icons/Delete";
-import ArchiveIcon from "@material-ui/icons/Archive";
-import CancelIcon from "@material-ui/icons/Cancel";
+import {
+  Archive as ArchiveIcon,
+  Cancel as CancelIcon,
+  Delete as DeleteIcon,
+  PlayArrow as PlayArrowIcon,
+} from "@material-ui/icons";
 import Alert from "@material-ui/lab/Alert";
 import AlertTitle from "@material-ui/lab/AlertTitle";
 import TablePaginationActions, {

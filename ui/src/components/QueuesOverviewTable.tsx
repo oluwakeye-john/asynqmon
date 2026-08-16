@@ -11,10 +11,12 @@ import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
-import PauseCircleFilledIcon from "@material-ui/icons/PauseCircleFilled";
-import PlayCircleFilledIcon from "@material-ui/icons/PlayCircleFilled";
-import DeleteIcon from "@material-ui/icons/Delete";
-import MoreHorizIcon from "@material-ui/icons/MoreHoriz";
+import {
+  Delete as DeleteIcon,
+  MoreHoriz as MoreHorizIcon,
+  PauseCircleFilled as PauseCircleFilledIcon,
+  PlayCircleFilled as PlayCircleFilledIcon,
+} from "@material-ui/icons";
 import DeleteQueueConfirmationDialog from "./DeleteQueueConfirmationDialog";
 import { Queue } from "../api";
 import { queueDetailsPath } from "../paths";

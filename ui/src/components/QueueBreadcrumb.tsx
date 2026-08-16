@@ -5,7 +5,7 @@ import Breadcrumbs from "@material-ui/core/Breadcrumbs";
 import Chip from "@material-ui/core/Chip";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import { ExpandMore as ExpandMoreIcon } from "@material-ui/icons";
 import { paths as getPaths, queueDetailsPath } from "../paths";
 import { isDarkTheme } from "../theme";
 

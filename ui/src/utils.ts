@@ -1,7 +1,17 @@
-import { AxiosError } from "axios";
+import axios from "axios";
+
+function unknownErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
 
 // toErrorStringWithHttpStatus returns a string representaion of axios error with HTTP status.
-export function toErrorStringWithHttpStatus(error: AxiosError<string>): string {
+export function toErrorStringWithHttpStatus(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return `error: ${unknownErrorMessage(error)}`;
+  }
   const { response } = error;
   if (!response) {
     return "error: no error response data available";
@@ -10,7 +20,10 @@ export function toErrorStringWithHttpStatus(error: AxiosError<string>): string {
 }
 
 // toErrorString returns a string representaion of axios error.
-export function toErrorString(error: AxiosError<string>): string {
+export function toErrorString(error: unknown): string {
+  if (!axios.isAxiosError(error)) {
+    return unknownErrorMessage(error);
+  }
   const { response } = error;
   if (!response) {
     return "Unknown error occurred. See the logs for details.";
