@@ -38,6 +38,8 @@ type Config struct {
 	ReadOnly         bool
 	MaxPayloadLength int
 	MaxResultLength  int
+	AuthUsername     string
+	AuthPassword     string
 
 	// Prometheus related configs
 	EnableMetricsExporter bool
@@ -72,6 +74,8 @@ func parseFlags(progname string, args []string) (cfg *Config, output string, err
 	flags.BoolVar(&conf.EnableMetricsExporter, "enable-metrics-exporter", getEnvOrDefaultBool("ENABLE_METRICS_EXPORTER", false), "enable prometheus metrics exporter to expose queue metrics")
 	flags.StringVar(&conf.PrometheusServerAddr, "prometheus-addr", getEnvDefaultString("PROMETHEUS_ADDR", ""), "address of prometheus server to query time series")
 	flags.BoolVar(&conf.ReadOnly, "read-only", getEnvOrDefaultBool("READ_ONLY", false), "restrict to read-only mode")
+	flags.StringVar(&conf.AuthUsername, "auth-username", getEnvDefaultString("AUTH_USERNAME", ""), "username required to access the web UI")
+	flags.StringVar(&conf.AuthPassword, "auth-password", getEnvDefaultString("AUTH_PASSWORD", ""), "password required to access the web UI (prefer AUTH_PASSWORD in production)")
 
 	err = flags.Parse(args)
 	if err != nil {
@@ -141,6 +145,9 @@ func main() {
 		fmt.Println(output)
 		os.Exit(1)
 	}
+	if err := validateConfig(cfg); err != nil {
+		log.Fatal(err)
+	}
 
 	redisConnOpt, err := makeRedisConnOpt(cfg)
 	if err != nil {
@@ -153,6 +160,8 @@ func main() {
 		ResultFormatter:   asynqmon.ResultFormatterFunc(resultFormatterFunc(cfg)),
 		PrometheusAddress: cfg.PrometheusServerAddr,
 		ReadOnly:          cfg.ReadOnly,
+		AuthUsername:      cfg.AuthUsername,
+		AuthPassword:      cfg.AuthPassword,
 	})
 	defer h.Close()
 
@@ -185,6 +194,13 @@ func main() {
 
 	fmt.Printf("Asynq Monitoring WebUI server is listening on port %d\n", cfg.Port)
 	log.Fatal(srv.ListenAndServe())
+}
+
+func validateConfig(cfg *Config) error {
+	if (cfg.AuthUsername == "") != (cfg.AuthPassword == "") {
+		return fmt.Errorf("auth username and password must be set together")
+	}
+	return nil
 }
 
 func payloadFormatterFunc(cfg *Config) func(string, []byte) string {

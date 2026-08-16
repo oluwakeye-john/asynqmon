@@ -13,10 +13,12 @@ api:
 build: assets
 	go build -o asynqmon ./cmd/asynqmon
 
-# Build image and run Asynqmon server (with default settings).
+# Build the image and run the Asynqmon server locally.
 docker:
 	docker build -t asynqmon .
 	docker run --rm \
 		--name asynqmon \
 		-p 4000:8080 \
+		--env AUTH_USERNAME=admin \
+		--env AUTH_PASSWORD=admin \
 		asynqmon --redis-addr=host.docker.internal:6379

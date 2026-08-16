@@ -67,6 +67,8 @@ To build Docker image locally, run:
 make docker
 ```
 
+The local container starts with authentication enabled using `admin` as both the username and password. These development-only credentials are passed when the container starts; they are not baked into the image. Configure proper credentials through environment variables or Kubernetes Secrets when deploying the image.
+
 ## Run the binary
 
 To use the defaults, simply run and open http://localhost:8080.
@@ -101,7 +103,7 @@ _Note_: Use `--redis-url` to specify address, db-number, and password with one f
 | Flag                              | Env                       | Description                                                                                                                  | Default          |
 | --------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | `--port`(int)                     | `PORT`                    | port number to use for web ui server                                                                                         | 8080             |
-| `---redis-url`(string)            | `REDIS_URL`               | URL to redis or sentinel server. See [godoc](https://pkg.go.dev/github.com/hibiken/asynq#ParseRedisURI) for supported format | ""               |
+| `--redis-url`(string)             | `REDIS_URL`               | URL to redis or sentinel server. See [godoc](https://pkg.go.dev/github.com/hibiken/asynq#ParseRedisURI) for supported format | ""               |
 | `--redis-addr`(string)            | `REDIS_ADDR`              | address of redis server to connect to                                                                                        | "127.0.0.1:6379" |
 | `--redis-db`(int)                 | `REDIS_DB`                | redis database number                                                                                                        | 0                |
 | `--redis-password`(string)        | `REDIS_PASSWORD`          | password to use when connecting to redis server                                                                              | ""               |
@@ -111,6 +113,68 @@ _Note_: Use `--redis-url` to specify address, db-number, and password with one f
 | `--enable-metrics-exporter`(bool) | `ENABLE_METRICS_EXPORTER` | enable prometheus metrics exporter to expose queue metrics                                                                   | false            |
 | `--prometheus-addr`(string)       | `PROMETHEUS_ADDR`         | address of prometheus server to query time series                                                                            | ""               |
 | `--read-only`(bool)               | `READ_ONLY`               | use web UI in read-only mode                                                                                                 | false            |
+| `--auth-username`(string)         | `AUTH_USERNAME`           | username required to access the web UI and API                                                                               | ""               |
+| `--auth-password`(string)         | `AUTH_PASSWORD`           | password required to access the web UI and API                                                                               | ""               |
+
+### Authentication
+
+Set both `AUTH_USERNAME` and `AUTH_PASSWORD` to protect the Asynqmon UI and API with the built-in sign-in screen. Authentication remains disabled when both values are empty, preserving the existing behavior. Startup fails if only one value is configured.
+
+Environment variables are recommended so the password does not appear in the process command line:
+
+```bash
+AUTH_USERNAME=operator \
+AUTH_PASSWORD='replace-with-a-long-random-password' \
+./asynqmon --redis-addr=localhost:6379
+```
+
+Successful sign-ins create an opaque, HTTP-only session cookie that expires after 12 hours. State-changing API requests are also protected with a CSRF token. Serve Asynqmon through HTTPS in production so the session cookie is marked secure. Sessions are kept in memory, so run one Asynqmon replica; restarting the pod signs users out. The optional `/metrics` endpoint is intentionally not protected, so expose it only inside the cluster or protect it at the ingress/network layer.
+
+For Kubernetes, store the credentials in a Secret and inject them into the container:
+
+```bash
+kubectl create secret generic asynqmon-auth \
+  --from-literal=username=operator \
+  --from-literal=password='replace-with-a-long-random-password'
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asynqmon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asynqmon
+  template:
+    metadata:
+      labels:
+        app: asynqmon
+    spec:
+      containers:
+        - name: asynqmon
+          image: your-dockerhub-user/asynqmon:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: asynqmon-auth
+                  key: username
+            - name: AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: asynqmon-auth
+                  key: password
+```
+
+Do not commit a Secret containing plaintext credentials. For a GitOps repository, use a secret manager such as External Secrets or an encrypted Secret mechanism such as Sealed Secrets.
+
+Library users can enable the same protection by setting both `AuthUsername` and `AuthPassword` in `asynqmon.Options`.
 
 ### Connecting to Redis
 

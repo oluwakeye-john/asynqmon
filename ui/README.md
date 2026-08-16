@@ -37,6 +37,9 @@ You can start a development server for the React UI outside of a running Asynqmo
 This starts the Vite development server at http://localhost:3000/. The page reloads when you edit the source code.
 
 The development UI expects the Asynqmon API server at http://localhost:8080/.
+Vite proxies `/api` requests to that server, including the authentication session cookie. To test the sign-in screen locally, start the backend from the repository root with both authentication values set:
+
+    AUTH_USERNAME=operator AUTH_PASSWORD=local-development-password go run ./cmd/asynqmon
 
 ## Running tests
 

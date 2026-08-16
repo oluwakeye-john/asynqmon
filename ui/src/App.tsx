@@ -6,6 +6,7 @@ import { makeStyles, Theme, ThemeProvider } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Drawer from "@material-ui/core/Drawer";
 import Toolbar from "@material-ui/core/Toolbar";
+import Button from "@material-ui/core/Button";
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
@@ -19,12 +20,14 @@ import {
   BarChart as BarChartIcon,
   Close as CloseIcon,
   DoubleArrow as DoubleArrowIcon,
+  ExitToApp as ExitToAppIcon,
   Feedback as FeedbackIcon,
   Layers as LayersIcon,
   Menu as MenuIcon,
   Schedule as ScheduleIcon,
   Settings as SettingsIcon,
   Timeline as TimelineIcon,
+  AccountCircle as AccountCircleIcon,
 } from "@material-ui/icons";
 import { AppState } from "./store";
 import { paths as getPaths } from "./paths";
@@ -43,6 +46,7 @@ import MetricsView from "./views/MetricsView";
 import PageNotFoundView from "./views/PageNotFoundView";
 import Logo from "./images/logo-color.svg?react";
 import LogoDarkTheme from "./images/logo-white.svg?react";
+import AuthGate from "./components/AuthGate";
 
 const drawerWidth = 220;
 
@@ -56,6 +60,50 @@ const useStyles = (theme: Theme) =>
     },
     toolbar: {
       paddingRight: 24, // keep right padding when drawer closed
+    },
+    toolbarGrow: {
+      flex: 1,
+    },
+    sessionControls: {
+      display: "flex",
+      alignItems: "center",
+      gap: theme.spacing(1),
+    },
+    usernameBadge: {
+      display: "flex",
+      alignItems: "center",
+      gap: theme.spacing(0.75),
+      padding: theme.spacing(0.75, 1.25),
+      borderRadius: 999,
+      color: theme.palette.text.secondary,
+      background: theme.palette.action.hover,
+      fontSize: "0.875rem",
+      fontWeight: 600,
+    },
+    username: {
+      maxWidth: 180,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      [theme.breakpoints.down("xs")]: {
+        display: "none",
+      },
+    },
+    signOutButton: {
+      borderRadius: 10,
+      color: theme.palette.text.secondary,
+      textTransform: "none",
+      fontWeight: 600,
+      [theme.breakpoints.down("xs")]: {
+        minWidth: 40,
+        padding: theme.spacing(1),
+        "& .MuiButton-startIcon": {
+          margin: 0,
+        },
+        "& .MuiButton-label": {
+          fontSize: 0,
+        },
+      },
     },
     toolbarIcon: {
       display: "flex",
@@ -160,7 +208,9 @@ function App(props: ConnectedProps<typeof connector>) {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <div className={classes.root}>
+        <AuthGate>
+          {(session) => (
+          <div className={classes.root}>
           <AppBar
             position="absolute"
             className={classes.appBar}
@@ -180,6 +230,27 @@ function App(props: ConnectedProps<typeof connector>) {
                 <LogoDarkTheme width={200} height={48} />
               ) : (
                 <Logo width={200} height={48} />
+              )}
+              <div className={classes.toolbarGrow} />
+              {session.authEnabled && (
+                <div className={classes.sessionControls}>
+                  <div
+                    className={classes.usernameBadge}
+                    title={`Signed in as ${session.username}`}
+                  >
+                    <AccountCircleIcon fontSize="small" />
+                    <span className={classes.username}>{session.username}</span>
+                  </div>
+                  <Button
+                    className={classes.signOutButton}
+                    startIcon={<ExitToAppIcon />}
+                    onClick={session.signOut}
+                    disabled={session.signingOut}
+                    aria-label="Sign out"
+                  >
+                    Sign out
+                  </Button>
+                </div>
               )}
             </Toolbar>
           </AppBar>
@@ -307,7 +378,9 @@ function App(props: ConnectedProps<typeof connector>) {
               </div>
             </main>
           </div>
-        </div>
+          </div>
+          )}
+        </AuthGate>
       </Router>
     </ThemeProvider>
   );

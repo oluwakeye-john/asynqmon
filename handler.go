@@ -42,6 +42,11 @@ type Options struct {
 
 	// Set ReadOnly to true to restrict user to view-only mode.
 	ReadOnly bool
+
+	// AuthUsername and AuthPassword enable form-based authentication when both
+	// are set. They must either both be set or both be empty.
+	AuthUsername string
+	AuthPassword string
 }
 
 // HTTPHandler is a http.Handler for asynqmon application.
@@ -59,6 +64,9 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func New(opts Options) *HTTPHandler {
 	if opts.RedisConnOpt == nil {
 		panic("asynqmon.New: RedisConnOpt field is required")
+	}
+	if err := validateAuthConfig(opts.AuthUsername, opts.AuthPassword); err != nil {
+		panic(err.Error())
 	}
 	rc, ok := opts.RedisConnOpt.MakeRedisClient().(redis.UniversalClient)
 	if !ok {
@@ -101,6 +109,7 @@ var staticContents embed.FS
 
 func muxRouter(opts Options, rc redis.UniversalClient, inspector *asynq.Inspector) *mux.Router {
 	router := mux.NewRouter().PathPrefix(opts.RootPath).Subrouter()
+	auth := newAuthenticator(opts.AuthUsername, opts.AuthPassword, opts.RootPath)
 
 	var payloadFmt PayloadFormatter = DefaultPayloadFormatter
 	if opts.PayloadFormatter != nil {
@@ -111,6 +120,11 @@ func muxRouter(opts Options, rc redis.UniversalClient, inspector *asynq.Inspecto
 	if opts.ResultFormatter != nil {
 		resultFmt = opts.ResultFormatter
 	}
+
+	// Authentication endpoints remain reachable before a session exists.
+	router.HandleFunc("/api/auth/session", auth.sessionHandler).Methods("GET")
+	router.HandleFunc("/api/auth/login", auth.loginHandler).Methods("POST")
+	router.HandleFunc("/api/auth/logout", auth.logoutHandler).Methods("POST")
 
 	api := router.PathPrefix("/api").Subrouter()
 
@@ -208,6 +222,7 @@ func muxRouter(opts Options, rc redis.UniversalClient, inspector *asynq.Inspecto
 	api.HandleFunc("/metrics", newGetMetricsHandlerFunc(http.DefaultClient, opts.PrometheusAddress)).Methods("GET")
 
 	// Restrict APIs when running in read-only mode.
+	api.Use(auth.requireSession)
 	if opts.ReadOnly {
 		api.Use(restrictToReadOnly)
 	}
