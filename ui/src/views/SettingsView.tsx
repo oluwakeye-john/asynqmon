@@ -8,7 +8,7 @@ import Typography from "@material-ui/core/Typography";
 import Slider from "@material-ui/core/Slider";
 import { pollIntervalChange, selectTheme } from "../actions/settingsActions";
 import { AppState } from "../store";
-import FormControl from "@material-ui/core/FormControl/FormControl";
+import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import { ThemePreference } from "../reducers/settingsReducer";
@@ -69,7 +69,7 @@ function SettingsView(props: PropsFromRedux) {
   };
   return (
     <Container maxWidth="lg" className={classes.container}>
-      <Grid container spacing={3} justify="center">
+      <Grid container spacing={3} justifyContent="center">
         <Grid item xs={1} />
         <Grid item xs={6}>
           <Typography variant="h5" color="textPrimary">
@@ -102,7 +102,7 @@ function SettingsView(props: PropsFromRedux) {
             />
           </Paper>
         </Grid>
-        <Grid xs={5} />
+        <Grid item xs={5} />
 
         <Grid item xs={1} />
         <Grid item xs={6}>
