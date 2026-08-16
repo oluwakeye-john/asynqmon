@@ -186,7 +186,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Handler:      mux,
+		Handler:      errorLoggingMiddleware(log.Default(), mux),
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,

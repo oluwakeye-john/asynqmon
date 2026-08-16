@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"net"
+	"bytes"
+	"log"
 	"net/http"
-	"os"
-	"strconv"
+	"strings"
 	"time"
 )
+
+const maxLoggedErrorBodyBytes = 2048
 
 // A responseRecorderWriter records response status and size.
 // It implements http.ResponseWriter interface.
@@ -17,44 +18,88 @@ type responseRecorderWriter struct {
 	status int
 	// The size of the object returned to the client, not including the response headers.
 	size int
+	// A bounded copy of a server-error response body for container logs.
+	errorBody          bytes.Buffer
+	errorBodyTruncated bool
 }
 
 func (w *responseRecorderWriter) WriteHeader(status int) {
-	w.ResponseWriter.WriteHeader(status)
+	// net/http ignores all WriteHeader calls after the first one. Mirror that
+	// behavior so the recorded status matches the response sent to the client.
+	if w.status != 0 {
+		return
+	}
 	w.status = status
+	w.ResponseWriter.WriteHeader(status)
 }
 
 func (w *responseRecorderWriter) Write(b []byte) (int, error) {
 	// If WriteHeader is not called explicitly, the first call to Write
 	// will trigger an implicit WriteHeader(http.StatusOK).
 	if w.status == 0 {
-		w.status = http.StatusOK
+		w.WriteHeader(http.StatusOK)
 	}
 	n, err := w.ResponseWriter.Write(b)
 	w.size += n
+	if w.status >= http.StatusInternalServerError && n > 0 {
+		remaining := maxLoggedErrorBodyBytes - w.errorBody.Len()
+		if remaining > 0 {
+			captured := n
+			if captured > remaining {
+				captured = remaining
+			}
+			_, _ = w.errorBody.Write(b[:captured])
+		}
+		if n > remaining {
+			w.errorBodyTruncated = true
+		}
+	}
 	return n, err
 }
 
-func loggingMiddleware(h http.Handler) http.Handler {
+// Unwrap lets net/http helpers access optional interfaces implemented by the
+// original ResponseWriter.
+func (w *responseRecorderWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+func (w *responseRecorderWriter) errorMessage() string {
+	message := strings.TrimSpace(w.errorBody.String())
+	if message == "" {
+		message = http.StatusText(w.status)
+	}
+	if w.errorBodyTruncated {
+		message += " [truncated]"
+	}
+	return message
+}
+
+// errorLoggingMiddleware writes failed backend requests to the Go logger,
+// which makes Redis and other API failures visible in container logs. Query
+// strings are intentionally excluded because they may contain sensitive data.
+func errorLoggingMiddleware(logger *log.Logger, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw := &responseRecorderWriter{ResponseWriter: w}
+		startedAt := time.Now()
 		h.ServeHTTP(rw, r)
 
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			host = r.RemoteAddr
+		if rw.status == 0 {
+			rw.status = http.StatusOK
 		}
-		username := "-"
-		if user := r.URL.User; user != nil {
-			username = user.Username()
+		if rw.status < http.StatusInternalServerError {
+			return
 		}
-		size := "-"
-		if rw.size > 0 {
-			size = strconv.Itoa(rw.size)
-		}
-		// Write a log in Apache common log format (http://httpd.apache.org/docs/2.2/logs.html#common).
-		fmt.Fprintf(os.Stdout, "%s - %s [%s] \"%s %s %s\" %d %s\n",
-			host, username, time.Now().Format("02/Jan/2006:15:04:05 -0700"),
-			r.Method, r.URL, r.Proto, rw.status, size)
+
+		logger.Printf(
+			"level=ERROR component=http msg=%q method=%q path=%q status=%d bytes=%d duration=%q remote_addr=%q error=%q",
+			"HTTP request failed",
+			r.Method,
+			r.URL.Path,
+			rw.status,
+			rw.size,
+			time.Since(startedAt).String(),
+			r.RemoteAddr,
+			rw.errorMessage(),
+		)
 	})
 }
