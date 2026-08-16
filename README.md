@@ -69,6 +69,16 @@ make docker
 
 The local container starts with authentication enabled using `admin` as both the username and password. These development-only credentials are passed when the container starts; they are not baked into the image. Configure proper credentials through environment variables or Kubernetes Secrets when deploying the image.
 
+### Publishing a multi-platform Docker image
+
+Sign in to Docker Hub through Docker Desktop, then provide the version as the second argument:
+
+```bash
+make docker-publish v0.2.0
+```
+
+This builds `linux/amd64` and `linux/arm64` images and pushes a multi-platform manifest to `oluwakeye/asynqmon` with both `v0.2.0` and `latest` tags. Override `DOCKER_PLATFORMS` if a different platform list is required.
+
 ## Run the binary
 
 To use the defaults, simply run and open http://localhost:8080.
